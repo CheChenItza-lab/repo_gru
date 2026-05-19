@@ -6,7 +6,8 @@ import { Container } from '../conteiners/entities/conteiners.entity';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { ContainerType } from '../conteiners/enums/conteiner-type.enum';
 import { Sensor } from 'src/sensors/entities/sensors.entity';
-
+import { NotFoundException } from '@nestjs/common';
+import { UpdateAreaDto } from './dto/update-area.dto';
 
 
 @Injectable()
@@ -60,5 +61,46 @@ export class AreasService{
     relations:['containers']
    });
  }
+
+ async findOne(id: number, cct: string) {
+  const area = await this.areaRepository.findOne({
+    where: { id, cct },
+    relations: ['containers'],
+  });
+
+  if (!area) {
+    throw new NotFoundException('Área no encontrada');
+  }
+
+  return area;
+}
+
+async update(
+  id: number,
+  cct: string,
+  updateAreaDto: UpdateAreaDto,
+) {
+  const area = await this.findOne(id, cct);
+
+  await this.areaRepository.update(id, updateAreaDto);
+
+  return {
+    message: 'Área actualizada correctamente',
+    area: {
+      ...area,
+      ...updateAreaDto,
+    },
+  };
+}
+
+async remove(id: number, cct: string) {
+  const area = await this.findOne(id, cct);
+
+  await this.areaRepository.remove(area);
+
+  return {
+    message: 'Área eliminada correctamente',
+  };
+}
 
 }

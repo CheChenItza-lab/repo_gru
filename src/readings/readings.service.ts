@@ -52,4 +52,14 @@ export class ReadingsService{
 
  }
 
+ async findAll(cct: string) {
+  return await this.readingRepository
+    .createQueryBuilder('reading')
+    .innerJoinAndSelect('reading.container', 'container')
+    .innerJoinAndSelect('container.area', 'area')
+    .where('area.cct = :cct', { cct })
+    .orderBy('reading.timestamp', 'DESC')
+    .getMany();
+}
+
 }

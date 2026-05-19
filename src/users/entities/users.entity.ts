@@ -47,6 +47,19 @@ export class User {
   @Column()
   cct!: string;
 
+  @Column({
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
+activation_token!: string | null;
+
+@Column({
+  type: 'timestamp',
+  nullable: true,
+})
+activation_token_expires!: Date | null;
+
   /*
     RELACIÓN
   */

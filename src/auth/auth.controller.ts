@@ -1,9 +1,4 @@
-import {
- Body,
- Controller,
- Post
-} from '@nestjs/common';
-
+import { Body, Controller, Post, Get, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 import { RegisterDto } from './dto/register.dto';
@@ -17,31 +12,22 @@ export class AuthController {
  ){}
 
 
+ 
  @Post('register')
- register(
-
-   @Body()
-   registerDto:RegisterDto
-
- ){
-
-   return this.authService
-   .register(registerDto);
-
- }
-
+ register(@Body() registerDto:RegisterDto){
+   return this.authService.register(registerDto);}
 
  @Post('login')
- login(
-
-   @Body()
-   loginDto:LoginDto
-
- ){
-
-   return this.authService
-   .login(loginDto);
-
+ login(  @Body() loginDto:LoginDto ){
+   return this.authService.login(loginDto);
  }
+
+ @Get('confirm-email')
+  confirmEmail(
+    @Query('token') token: string,
+  ) {
+    return this.authService.confirmEmail(token);
+  }
+
 
 }
