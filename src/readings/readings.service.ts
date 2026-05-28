@@ -62,4 +62,91 @@ export class ReadingsService{
     .getMany();
 }
 
+async getHistory(filters: {
+  cct: string;
+  page: number;
+  limit: number;
+  start?: string;
+  end?: string;
+  type?: string;
+  areaId?: number;
+}) {
+  const {
+    cct,
+    page,
+    limit,
+    start,
+    end,
+    type,
+    areaId,
+  } = filters;
+
+  const currentPage = page > 0 ? page : 1;
+  const currentLimit = limit > 0 ? limit : 20;
+  const skip = (currentPage - 1) * currentLimit;
+
+  const query = this.readingRepository
+    .createQueryBuilder('l')
+    .innerJoin('l.container', 'c')
+    .innerJoin('c.area', 'a')
+    .select('l.id', 'id')
+    .addSelect('c.tipo', 'tipo')
+    .addSelect('a.id', 'areaId')
+    .addSelect('a.nombre', 'area')
+    .addSelect('l.conteo', 'conteo')
+    .addSelect('l.timestamp', 'fecha')
+    .where('a.cct = :cct', { cct });
+
+  if (start) {
+    const startDate = new Date(start);
+    query.andWhere('l.timestamp >= :startDate', {
+      startDate,
+    });
+  }
+
+  if (end) {
+    const endDate = new Date(end);
+    endDate.setHours(23, 59, 59, 999);
+
+    query.andWhere('l.timestamp <= :endDate', {
+      endDate,
+    });
+  }
+
+  if (type) {
+    query.andWhere('c.tipo = :type', {
+      type,
+    });
+  }
+
+  if (areaId) {
+    query.andWhere('a.id = :areaId', {
+      areaId,
+    });
+  }
+
+  const total = await query.getCount();
+
+  const data = await query
+    .orderBy('l.timestamp', 'DESC')
+    .offset(skip)
+    .limit(currentLimit)
+    .getRawMany();
+
+  return {
+    data: data.map((item) => ({
+      id: Number(item.id),
+      tipo: item.tipo,
+      areaId: Number(item.areaId),
+      area: item.area,
+      conteo: Number(item.conteo),
+      fecha: item.fecha,
+    })),
+    total,
+    page: currentPage,
+    limit: currentLimit,
+    totalPages: Math.ceil(total / currentLimit),
+  };
+}
+
 }
