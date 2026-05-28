@@ -12,6 +12,8 @@ import { School } from 'src/schools/entities/schools.entity';
 
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -88,7 +90,7 @@ const transporter = nodemailer.createTransport({
 });
 
 await transporter.sendMail({
-  from: `"GIRU" <${process.env.MAIL_USER}>`,
+  from: `"GRU" <${process.env.MAIL_USER}>`,
   to: user.email,
   subject: 'Confirma tu cuenta',
   html: `
@@ -180,6 +182,113 @@ async confirmEmail(token: string) {
 
   return {
     message: 'Cuenta activada correctamente',
+  };
+}
+
+async forgotPassword(
+  forgotPasswordDto: ForgotPasswordDto,
+) {
+  const { email } = forgotPasswordDto;
+
+  const user = await this.userRepository.findOne({
+    where: { email },
+  });
+
+  if (!user) {
+    return {
+      message: 'Si el correo existe, se enviará un enlace de recuperación.',
+    };
+  }
+
+  const resetToken = randomBytes(32).toString('hex');
+
+  const expirationDate = new Date();
+  expirationDate.setHours(expirationDate.getHours() + 1);
+
+  user.reset_password_token = resetToken;
+  user.reset_password_expires = expirationDate;
+
+  await this.userRepository.save(user);
+
+  const resetLink = `http://localhost:5173/reset-password?token=${resetToken}`;
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.MAIL_HOST,
+    port: Number(process.env.MAIL_PORT),
+    secure: false,
+    auth: {
+      user: process.env.MAIL_USER,
+      pass: process.env.MAIL_PASSWORD,
+    },
+  });
+
+  await transporter.sendMail({
+    from: `"GRU" <${process.env.MAIL_USER}>`,
+    to: user.email,
+    subject: 'Recuperación de contraseña',
+    html: `
+      <h2>Recuperación de contraseña</h2>
+      <p>Haz clic en el siguiente enlace para crear una nueva contraseña:</p>
+      <a href="${resetLink}">Restablecer contraseña</a>
+      <p>Este enlace expira en 1 hora.</p>
+    `,
+  });
+
+  return {
+    message: 'Si el correo existe, se enviará un enlace de recuperación.',
+  };
+}
+
+async resetPassword(
+  resetPasswordDto: ResetPasswordDto,
+) {
+  const { token, newPassword } = resetPasswordDto;
+
+  const user = await this.userRepository.findOne({
+    where: {
+      reset_password_token: token,
+    },
+  });
+
+  if (!user) {
+    throw new BadRequestException('Token inválido');
+  }
+
+  if (
+    user.reset_password_expires &&
+    user.reset_password_expires < new Date()
+  ) {
+    throw new BadRequestException('El token ha expirado');
+  }
+
+  user.password = newPassword;
+  user.reset_password_token = null;
+  user.reset_password_expires = null;
+
+  await this.userRepository.save(user);
+
+  return {
+    message: 'Contraseña actualizada correctamente',
+  };
+}
+
+async getProfile(userId: number) {
+  const user = await this.userRepository.findOne({
+    where: {
+      id: userId,
+    },
+    relations: ['school'],
+  });
+
+  if (!user) {
+    throw new UnauthorizedException('Usuario no encontrado');
+  }
+
+  return {
+    id: user.id,
+    email: user.email,
+    cct: user.cct,
+    school: user.school,
   };
 }
 

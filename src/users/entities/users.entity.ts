@@ -60,6 +60,19 @@ activation_token!: string | null;
 })
 activation_token_expires!: Date | null;
 
+@Column({
+  type: 'varchar',
+  length: 500,
+  nullable: true,
+})
+reset_password_token!: string | null;
+
+@Column({
+  type: 'timestamp',
+  nullable: true,
+})
+reset_password_expires!: Date | null;
+
   /*
     RELACIÓN
   */

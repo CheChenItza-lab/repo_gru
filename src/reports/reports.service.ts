@@ -146,7 +146,7 @@ export class ReportsService {
   // Encabezado
   doc
     .fontSize(22)
-    .text('GIRU', { align: 'center' });
+    .text('GRU', { align: 'center' });
 
   doc
     .fontSize(14)
