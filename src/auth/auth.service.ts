@@ -77,7 +77,8 @@ const user = this.userRepository.create({
 await this.userRepository.save(user);
 
 
-const activationLink = `http://localhost:3000/auth/confirm-email?token=${activationToken}`;
+const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+const activationLink = `${backendUrl}/auth/confirm-email?token=${activationToken}`;
 
 const transporter = nodemailer.createTransport({
   host: process.env.MAIL_HOST,
@@ -210,7 +211,8 @@ async forgotPassword(
 
   await this.userRepository.save(user);
 
-  const resetLink = `http://localhost:5173/reset-password?token=${resetToken}`;
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`;
 
   const transporter = nodemailer.createTransport({
     host: process.env.MAIL_HOST,
