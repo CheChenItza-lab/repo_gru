@@ -14,6 +14,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { Resend } from 'resend';
 
 @Injectable()
 export class AuthService {
@@ -80,26 +81,15 @@ await this.userRepository.save(user);
 const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
 const activationLink = `${backendUrl}/auth/confirm-email?token=${activationToken}`;
 
-const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_HOST,
-  port: Number(process.env.MAIL_PORT),
-  secure: false,
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASSWORD,
-  },
-});
-
-await transporter.sendMail({
-  from: `"GRU" <${process.env.MAIL_USER}>`,
-  to: user.email,
-  subject: 'Confirma tu cuenta',
-  html: `
+await this.sendEmail(
+  user.email,
+  'Confirma tu cuenta',
+  `
     <h2>Confirma tu cuenta</h2>
     <p>Haz clic en el siguiente enlace para activar tu cuenta:</p>
     <a href="${activationLink}">Activar cuenta</a>
   `,
-});
+);
 
 
     return{
@@ -214,27 +204,16 @@ async forgotPassword(
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`;
 
-  const transporter = nodemailer.createTransport({
-    host: process.env.MAIL_HOST,
-    port: Number(process.env.MAIL_PORT),
-    secure: false,
-    auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASSWORD,
-    },
-  });
-
-  await transporter.sendMail({
-    from: `"GRU" <${process.env.MAIL_USER}>`,
-    to: user.email,
-    subject: 'Recuperación de contraseña',
-    html: `
-      <h2>Recuperación de contraseña</h2>
-      <p>Haz clic en el siguiente enlace para crear una nueva contraseña:</p>
-      <a href="${resetLink}">Restablecer contraseña</a>
-      <p>Este enlace expira en 1 hora.</p>
-    `,
-  });
+  await this.sendEmail(
+  user.email,
+  'Recuperación de contraseña',
+  `
+    <h2>Recuperación de contraseña</h2>
+    <p>Haz clic en el siguiente enlace para crear una nueva contraseña:</p>
+    <a href="${resetLink}">Restablecer contraseña</a>
+    <p>Este enlace expira en 1 hora.</p>
+  `,
+);
 
   return {
     message: 'Si el correo existe, se enviará un enlace de recuperación.',
@@ -292,6 +271,37 @@ async getProfile(userId: number) {
     cct: user.cct,
     school: user.school,
   };
+}
+
+private getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY no está configurada');
+  }
+
+  return new Resend(apiKey);
+}
+
+private async sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+) {
+  const resend = this.getResendClient();
+
+  const from = process.env.MAIL_FROM || 'GRU <onboarding@resend.dev>';
+
+  const result = await resend.emails.send({
+    from,
+    to,
+    subject,
+    html,
+  });
+
+  console.log('Correo enviado con Resend:', result.data?.id);
+
+  return result;
 }
 
 }
