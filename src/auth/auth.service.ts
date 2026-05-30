@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
 
