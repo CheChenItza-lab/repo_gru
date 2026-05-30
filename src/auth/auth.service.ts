@@ -298,6 +298,13 @@ private async sendEmail(
     html,
   });
 
+  console.log('Respuesta completa de Resend:', result);
+
+  if (result.error) {
+    console.error('Error de Resend:', result.error);
+    throw new Error('No se pudo enviar el correo');
+  }
+
   console.log('Correo enviado con Resend:', result.data?.id);
 
   return result;
